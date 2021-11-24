@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <script src="https://pixijs.download/release/pixi.js"></script>
+    </head>
+    <body>
+        <script>
+            let app = new PIXI.Application({width: 640, height: 360});
+            document.body.appendChild(app.view);
+
+            let sprite = PIXI.Sprite.from("random_goomba_head.png");
+            sprite.width = 10;
+            sprite.height = 10;
+
+            app.stage.addChild(sprite);
+
+            let elapsed = 0.0;
+            app.ticker.add((delta) => {
+                elapsed += delta;
+
+                sprite.x = 100 + Math.cos(elapsed/50) * 100;
+            });
+        </script>
+    </body>
+</html>
