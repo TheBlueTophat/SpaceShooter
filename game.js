@@ -21,8 +21,11 @@ let kbKey = {up:38, down:40, left:37, right:39};
 
 function keyHandler(event, setState)
 {
-    // I have no idea how this is 
+    // I don't get why this doesn't throw an error whenever a key is pressed that isn't in the kbKey
+    // What getKeyByValue returns here is "undefined" for any keys that aren't the ones already defined.
+    // I don't see any error otherwise though. Oh well. It works! 
     KD[getKeyByValue(kbKey, event.keyCode)] = setState;
+    // console.log(getKeyByValue(kbKey, event.keyCode));
 }
 
 function getKeyByValue(object, value)
@@ -43,8 +46,6 @@ app.ticker.add((delta) => {
 elapsed += delta;
 
 // ---- Effective start of the loop
-
-//sprite.x = 100 + Math.cos(elapsed/50) * 100;
 
 if(KD.right)
 {
