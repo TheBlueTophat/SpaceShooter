@@ -1,3 +1,9 @@
+// Pages I might need/want access to
+// - Handling multiple keypresses at once
+// -- https://medium.com/@dovern42/handling-multiple-key-presses-at-once-in-vanilla-javascript-for-game-controllers-6dcacae931b7
+// - Tool for getting keyboard input names
+// -- https://jsfiddle.net/4j54jqt2/4
+
 // Remember, Ctrl + Shift + R to reload the page as well as refresh the cache
 let app = new PIXI.Application({width: 1000, height: 600});
 document.body.appendChild(app.view);
@@ -10,27 +16,42 @@ console.log("Test");
 
 document.addEventListener("keydown", function(){keyHandler(event, true)}, false);
 document.addEventListener("keyup", function(){keyHandler(event, false)}, false);
+// document.addEventListener("onkeypress", function(){keyHandler(event, true, "onkeypress")}, false);
 
-var rightPressed = false;
-var leftPressed = false;
+let sfxVolume = 1; // Ratio, 1 = 100%, 0.5 = 50%, 0 = 0%
 
-// Stands for inputKeyDown
-let KD = {up:false, down:false, left:false, right:false};
+let rightPressed = false;
+let leftPressed = false;
+
+let KD =            {up: false, down: false, left: false, right: false, shoot: false}; // Stands for inputKeyDown
+let KDprev =        {up: false, down: false, left: false, right: false, shoot: false}; // KD values from the previous frame
+let justPressed =   {up: false, down: false, left: false, right: false, shoot: false};
+
 // Stands for KeyboardKey
-let kbKey = {up:38, down:40, left:37, right:39};
+// Default uses the arrow keys to move and spacebar to shoot
+const kbKey = {up: "ArrowUp", down: "ArrowDown", left: "ArrowLeft", right: "ArrowRight", shoot: "w"};
 
 function keyHandler(event, setState)
 {
+    console.log(event.key);
+
     // I don't get why this doesn't throw an error whenever a key is pressed that isn't in the kbKey
     // What getKeyByValue returns here is "undefined" for any keys that aren't the ones already defined.
     // I don't see any error otherwise though. Oh well. It works! 
-    KD[getKeyByValue(kbKey, event.keyCode)] = setState;
+    KD[getKeyByValue(kbKey, event.key)] = setState;
     // console.log(getKeyByValue(kbKey, event.keyCode));
 }
 
 function getKeyByValue(object, value)
 {
     return Object.keys(object).find(key => object[key] === value);
+}
+
+function playSound(path)
+{
+    let audio = new Audio(path);
+    audio.volume = sfxVolume;
+    audio.play();
 }
 
 // Creates the first sprite, adds it to the stage
@@ -45,7 +66,20 @@ let elapsed = 0.0;
 app.ticker.add((delta) => {
 elapsed += delta;
 
-// ---- Effective start of the loop
+// ---- Start of the loop ---- ---- ----
+
+for (const key in justPressed)
+{
+    if(KDprev[key] == false && KD[key] == true)
+    {
+        if(key == "shoot") console.log("justPressed true");
+        justPressed[key] = true;
+    }
+    else
+    {
+        justPressed[key] = false;
+    }  
+}
 
 if(KD.right)
 {
@@ -67,6 +101,15 @@ if(KD.down)
     sprite.y += 1;
 }
 
+if(justPressed.shoot)
+{
+    playSound("shootLaser.wav");
+}
 
-// ---- End of the loop
+for (const key in KDprev)
+{
+    KDprev[key] = KD[key];
+}
+
+// ---- End of the loop ---- ---- ----
 });
