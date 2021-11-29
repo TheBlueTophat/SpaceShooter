@@ -7,8 +7,11 @@
 // Remember, Ctrl + Shift + R to reload the page as well as refresh the cache
 
 // Initializes the stage, prints some relevant  info.
-let app = new PIXI.Application({width: 1000, height: 600});
-document.body.appendChild(app.view);
+const WORLD_WIDTH = 1000;
+const WORLD_HEIGHT = 600;
+
+let world = new PIXI.Application({width: WORLD_WIDTH, height: WORLD_HEIGHT});
+document.body.appendChild(world.view);
 
 console.log(window.innerWidth);
 console.log(window.innerHeight);
@@ -20,7 +23,7 @@ document.addEventListener("keydown", function(){keyHandler(event, true)}, false)
 document.addEventListener("keyup", function(){keyHandler(event, false)}, false);
 
 
-let sfxVolume = 1; // Ratio, 1 = 100%, 0.5 = 50%, 0 = 0%
+let sfxVolume = 0.1; // Ratio, 1 = 100%, 0.5 = 50%, 0 = 0%
 
 let kD =        {up: false, down: false, left: false, right: false, shoot: false}; // Stands for Input Key Down
 let kDPrev =    {up: false, down: false, left: false, right: false, shoot: false}; // kD values from the previous frame
@@ -81,18 +84,19 @@ function p(val)
 
 // Creates the first sprite, adds it to the stage
 // let sprite = PIXI.Sprite.from("random_goomba_head.png");
-let sprite = new PIXI.Graphics();
-sprite.beginFill(0x00CCAA);
-sprite.drawRect(0, 0, 10, 10)
-// sprite.width = 10;
-// sprite.height = 10;
-app.stage.addChild(sprite);
+let player = new PIXI.Graphics();
+player.beginFill(0x00CCAA);
+player.drawRect(0, 0, 10, 10);
+player.x = (WORLD_WIDTH - 10) / 2;
+player.y = (WORLD_HEIGHT - 10) / 2;
+
+world.stage.addChild(player);
 
 let playerShots = [];
 
 // Main game loop
 let elapsed = 0.0;
-app.ticker.add((delta) => mainLoop(delta));
+world.ticker.add((delta) => mainLoop(delta));
 
 function mainLoop(delta)
 {
@@ -114,22 +118,22 @@ function mainLoop(delta)
 
     if(kD.right)
     {
-        sprite.x += 1;
+        player.x += 1;
     }
 
     if(kD.left)
     {
-        sprite.x -= 1;
+        player.x -= 1;
     }
 
     if(kD.up)
     {
-        sprite.y -= 1;
+        player.y -= 1;
     }
 
     if(kD.down)
     {
-        sprite.y += 1;
+        player.y += 1;
     }
 
     if(kJP.shoot)
@@ -138,8 +142,11 @@ function mainLoop(delta)
 
         let newShot = new PIXI.Graphics();
         newShot.beginFill(0xFF0000);
-        newShot.drawRect((sprite.x + (sprite.width - 5) / 2), sprite.y + (sprite.height - 10) / 2, 5, 10);
-        app.stage.addChild(newShot);
+        newShot.drawRect(0, 0, 5, 10); // CHANGE TO WIDTH AND HEIGHT
+        newShot.x = player.x + (player.width - 5) / 2; // CHANGE TO WIDTH AND HEIGHT
+        newShot.y = player.y + (player.height - 10) / 2; // CHANGE TO WIDTH AND HEIGHT
+        
+        world.stage.addChild(newShot);
         playerShots.push(newShot);
     }
 
