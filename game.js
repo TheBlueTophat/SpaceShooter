@@ -29,7 +29,7 @@ let kD =        {up: false, down: false, left: false, right: false, shoot: false
 let kDPrev =    {up: false, down: false, left: false, right: false, shoot: false}; // kD values from the previous frame
 let kJP =       {up: false, down: false, left: false, right: false, shoot: false}; // Stands for Key Just Pressed
 
-const kBKey = {up: "ArrowUp", down: "ArrowDown", left: "ArrowLeft", right: "ArrowRight", shoot: ["w", "W"]}; // Stands for Key Board Key
+const kBKey = {up: ["w", "W"], down: ["s", "S"], left: ["a", "A"], right: ["d", "D"], shoot: [" "]}; // Stands for Key Board Key
 
 function keyHandler(event, setState)
 {
