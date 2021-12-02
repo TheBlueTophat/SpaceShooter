@@ -90,6 +90,8 @@ player.drawRect(0, 0, 10, 10);
 player.x = (WORLD_WIDTH - 10) / 2;
 player.y = (WORLD_HEIGHT - 10) / 2;
 
+player.drawTo(0, -20);
+
 world.stage.addChild(player);
 
 let playerShots = [];
