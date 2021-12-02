@@ -10,7 +10,7 @@
 const WORLD_WIDTH = 1000;
 const WORLD_HEIGHT = 600;
 
-let world = new PIXI.Application({width: WORLD_WIDTH, height: WORLD_HEIGHT});
+let world = new PIXI.Application({width: WORLD_WIDTH, height: WORLD_HEIGHT, backgroundColor: 0x000033});
 document.body.appendChild(world.view);
 
 console.log(window.innerWidth);
@@ -25,11 +25,11 @@ document.addEventListener("keyup", function(){keyHandler(event, false)}, false);
 
 let sfxVolume = 0.1; // Ratio, 1 = 100%, 0.5 = 50%, 0 = 0%
 
-let kD =        {up: false, down: false, left: false, right: false, shoot: false}; // Stands for Input Key Down
-let kDPrev =    {up: false, down: false, left: false, right: false, shoot: false}; // kD values from the previous frame
-let kJP =       {up: false, down: false, left: false, right: false, shoot: false}; // Stands for Key Just Pressed
+let kD =        {up: false, down: false, left: false, right: false, shoot: false, increaseRadius: false, decreaseRadius: false}; // Stands for Input Key Down
+let kDPrev =    {up: false, down: false, left: false, right: false, shoot: false, increaseRadius: false, decreaseRadius: false}; // kD values from the previous frame
+let kJP =       {up: false, down: false, left: false, right: false, shoot: false, increaseRadius: false, decreaseRadius: false}; // Stands for Key Just Pressed
 
-const kBKey = {up: ["w", "W"], down: ["s", "S"], left: ["a", "A"], right: ["d", "D"], shoot: [" "]}; // Stands for Key Board Key
+const kBKey = {up: ["w", "W"], down: ["s", "S"], left: ["a", "A"], right: ["d", "D"], shoot: [" "], increaseRadius: ["o", "O"], decreaseRadius: ["l", "L"]}; // Stands for Key Board Key
 
 function keyHandler(event, setState)
 {
@@ -90,9 +90,22 @@ player.drawRect(0, 0, 10, 10);
 player.x = (WORLD_WIDTH - 10) / 2;
 player.y = (WORLD_HEIGHT - 10) / 2;
 
-player.drawTo(0, -20);
+//player.drawTo(0, -20);
 
 world.stage.addChild(player);
+
+// Draws a line for the rotation radius
+let radiusLine = new PIXI.Graphics();
+radiusLine.x = 0;
+radiusLine.y = 0;
+// radiusLine.lineStyle(5, 0xffffff).moveTo(player.x, player.y).lineTo(0, 0);
+radiusLine.lineStyle(5, 0xffffff);
+
+world.stage.addChild(radiusLine);
+
+const MIN_RADIUS = 20; // Minimum radius allowed - more than 0 to make it interesting!
+let radius = MIN_RADIUS;
+
 
 let playerShots = [];
 
@@ -103,6 +116,7 @@ world.ticker.add((delta) => mainLoop(delta));
 function mainLoop(delta)
 {
     elapsed += delta;
+
 
     // Handles justPressed functionality (move to function?)
     for (const key in kJP)
@@ -151,6 +165,34 @@ function mainLoop(delta)
         world.stage.addChild(newShot);
         playerShots.push(newShot);
     }
+
+    if(kD.increaseRadius)
+    {
+        radius += 1;
+        radiusLine.clear();
+        radiusLine.lineStyle(5, 0xffffff);
+    }
+
+    if(kD.decreaseRadius)
+    {
+        radius -= 1;
+        if(radius < MIN_RADIUS)
+        {
+            radius = MIN_RADIUS;
+        }
+
+        radiusLine.clear();
+        radiusLine.lineStyle(5, 0xffffff);
+    }
+
+    // radiusLine.lineStyle(5, 0xffffff).moveTo(player.x, player.y).lineTo(0, -radius);
+    // radiusLine.beginPath();
+    // radiusLine.moveTo(player.x, player.y);
+    radiusLine.x = player.x;
+    radiusLine.y = player.y;
+    radiusLine.lineTo(0, - radius);
+    p(radius);
+    // radiusLine.stroke();
 
 
     for (shot in playerShots)
