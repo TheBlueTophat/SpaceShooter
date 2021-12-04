@@ -94,12 +94,13 @@ player.y = (WORLD_HEIGHT - 10) / 2;
 
 world.stage.addChild(player);
 
+let radiusColor = 0xCCCCCC;
 // Draws a line for the rotation radius
 let radiusLine = new PIXI.Graphics();
 radiusLine.x = 0;
 radiusLine.y = 0;
 // radiusLine.lineStyle(5, 0xffffff).moveTo(player.x, player.y).lineTo(0, 0);
-radiusLine.lineStyle(5, 0xff0000);
+radiusLine.lineStyle(5, radiusColor);
 
 world.stage.addChild(radiusLine);
 
