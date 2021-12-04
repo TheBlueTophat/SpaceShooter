@@ -99,7 +99,7 @@ let radiusLine = new PIXI.Graphics();
 radiusLine.x = 0;
 radiusLine.y = 0;
 // radiusLine.lineStyle(5, 0xffffff).moveTo(player.x, player.y).lineTo(0, 0);
-radiusLine.lineStyle(5, 0xffffff);
+radiusLine.lineStyle(5, 0xff0000);
 
 world.stage.addChild(radiusLine);
 
