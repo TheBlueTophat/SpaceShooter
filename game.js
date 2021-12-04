@@ -171,7 +171,7 @@ function mainLoop(delta)
     {
         radius += 1;
         radiusLine.clear();
-        radiusLine.lineStyle(5, 0xffffff);
+        radiusLine.lineStyle(5, RADIUS_COLOR);
     }
 
     if(kD.decreaseRadius)
