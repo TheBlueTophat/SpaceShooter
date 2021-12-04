@@ -94,7 +94,7 @@ player.y = (WORLD_HEIGHT - 10) / 2;
 
 world.stage.addChild(player);
 
-let radiusColor = 0xCCCCCC;
+let radiusColor = 0x555555;
 // Draws a line for the rotation radius
 let radiusLine = new PIXI.Graphics();
 radiusLine.x = 0;
