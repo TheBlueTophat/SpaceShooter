@@ -2,4 +2,4 @@
 deployment:
   tasks:
     - export = DEPLOYPATH=/home/mosshatx/public_html
-    - /bin/cp -R images $DEPLOYPATH
+    - /bin/cp -R SpaceShooter $DEPLOYPATH
