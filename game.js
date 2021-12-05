@@ -89,14 +89,20 @@ player.beginFill(0x00CCAA);
 player.drawRect(0, 0, 10, 10);
 //player.x = (WORLD_WIDTH - 10) / 2;
 // player.y = (WORLD_HEIGHT - 10) / 2;
-player.x = 100;
-player.y = 100;
+player.x = WORLD_WIDTH / 2;
+player.y = WORLD_HEIGHT / 2;
+player.vx = 0;
+player.vy = 0;
+player.ax = 0;
+player.ay = 0;
+
+const PLAYER_ACCEL_DECAY = 0.1;
 
 //player.drawTo(0, -20);
 
 world.stage.addChild(player);
 
-player.angle = -90; // idk if this will break later or not
+player.angle = (2 * Math.PI) * 0.75; // idk if this will break later or not
 
 const RADIUS_COLOR = 0x555555;
 // Draws a line for the rotation radius
@@ -109,6 +115,7 @@ radiusLine.lineStyle(5, RADIUS_COLOR);
 world.stage.addChild(radiusLine);
 
 const MIN_RADIUS = 20; // Minimum radius allowed - more than 0 to make it interesting!
+const MAX_RADIUS = 100;
 let radius = MIN_RADIUS;
 
 
@@ -122,6 +129,8 @@ function mainLoop(delta)
 {
     elapsed += delta;
 
+    let cx = player.x - Math.cos(player.angle) * radius;
+    let cy = player.y - Math.sin(player.angle) * radius;
 
     // Handles justPressed functionality (move to function?)
     for (const key in kJP)
@@ -153,24 +162,72 @@ function mainLoop(delta)
         // p'y = sin(theta) * (px-ox) + cos(theta) * (py-oy) + oy
         // player.angle = (player.angle - (2 * Math.PI) * 0.1) % (2 * Math.PI);
         // player.angle = 0.01;
-        let rA = 0.01;
 
-        let cx = 1;//(WORLD_WIDTH / 2);
-        let cy = 1;//(WORLD_HEIGHT / 2);
+        // let rA = 0.01;
 
-        player.x = (Math.cos(rA) * (player.x - cx)) - (Math.sin(rA) * (player.y - cy));// + player.x;
-        player.y = (Math.sin(rA) * (player.x - cx)) + (Math.cos(rA) * (player.y - cy));// + player.y;
+        // let cx = 1;//(WORLD_WIDTH / 2);
+        // let cy = 1;//(WORLD_HEIGHT / 2);
+
+        // player.x = (Math.cos(rA) * (player.x - cx)) - (Math.sin(rA) * (player.y - cy));// + player.x;
+        // player.y = (Math.sin(rA) * (player.x - cx)) + (Math.cos(rA) * (player.y - cy));// + player.y;
+
+        let rA = -(3.14/180) / (radius / MIN_RADIUS) * 10; // 1 deg
+        // let cx = WORLD_WIDTH / 2;
+        // let cy = WORLD_HEIGHT / 2;
+        
+
+        // player.x = Math.cos(rA) * (player.x - cx) - Math.sin(rA) * (player.y - cy) + cx;
+        // player.y = Math.sin(rA) * (player.x - cx) + Math.cos(rA) * (player.y - cy) + cy;
+        // player.ax += Math.cos(rA) * (player.x - cx) - Math.sin(rA) * (player.y - cy);
+        // player.ay += Math.sin(rA) * (player.x - cx) + Math.cos(rA) * (player.y - cy);
+        player.vx += -Math.sin(rA) * (player.x - cx) - Math.cos(rA) * (player.y - cy);
+        player.vy += Math.cos(rA) * (player.x - cx) - Math.sin(rA) * (player.y - cy);
+
+        player.angle += rA;
+
+        p("cx: " + String(cx) + " cy: " + String(cy));
+
+        let dot = new PIXI.Graphics();
+        dot.beginFill(0x00CC00);
+        dot.drawRect(0, 0, 1, 1);
+        dot.x = cx;
+        dot.y = cy;
+        world.stage.addChild(dot);
     }
-    p("x: " + String(player.x) + " y: " + String(player.y));
+    p("x: " + String(player.x) + " y: " + String(player.y) + " radius: " + String(radius) + " player.angle: " + String(player.angle));
+    p("ax: " + String(player.ax) + " ay: " + String(player.ay));
+
+    if(kD.left)
+    {
+        let rA = (3.14/180) / (radius / MIN_RADIUS) * 10;
+        let cx = player.x - Math.cos(player.angle) * radius;
+        let cy = player.y - Math.sin(player.angle) * radius;
+
+        player.x = Math.cos(rA) * (player.x - cx) - Math.sin(rA) * (player.y - cy) + cx;
+        player.y = Math.sin(rA) * (player.x - cx) + Math.cos(rA) * (player.y - cy) + cy;
+        player.angle += rA;
+
+        p("cx: " + String(cx) + " cy: " + String(cy));
+
+        let dot = new PIXI.Graphics();
+        dot.beginFill(0x00CC00);
+        dot.drawRect(0, 0, 1, 1);
+        dot.x = cx;
+        dot.y = cy;
+        world.stage.addChild(dot);
+    }
 
     if(kD.up)
     {
-        player.y -= 1;
+        // player.y -= 1;
+        player.x -= 1 * Math.cos(player.angle); // CHANGE TO SPEED
+        player.y -= 1 * Math.sin(player.angle); // CHANGE TO SPEED
     }
 
     if(kD.down)
     {
-        player.y += 1;
+        player.x += 1 * Math.cos(player.angle); // CHANGE TO SPEED
+        player.y += 1 * Math.sin(player.angle); // CHANGE TO SPEED
     }
 
     if(kJP.shoot)
@@ -182,7 +239,8 @@ function mainLoop(delta)
         newShot.drawRect(0, 0, 5, 10); // CHANGE TO WIDTH AND HEIGHT
         newShot.x = player.x + (player.width - 5) / 2; // CHANGE TO WIDTH AND HEIGHT
         newShot.y = player.y + (player.height - 10) / 2; // CHANGE TO WIDTH AND HEIGHT
-        
+        newShot.angle = player.angle;
+
         world.stage.addChild(newShot);
         playerShots.push(newShot);
     }
@@ -190,8 +248,13 @@ function mainLoop(delta)
     if(kD.increaseRadius)
     {
         radius += 1;
-        radiusLine.clear();
-        radiusLine.lineStyle(5, RADIUS_COLOR);
+        if(radius > MAX_RADIUS)
+        {
+            radius = MAX_RADIUS;
+        }
+
+        // player.x += 1 * Math.cos(player.angle); // CHANGE TO SPEED
+        // player.y += 1 * Math.sin(player.angle); // CHANGE TO SPEED
     }
 
     if(kD.decreaseRadius)
@@ -202,23 +265,73 @@ function mainLoop(delta)
             radius = MIN_RADIUS;
         }
 
-        radiusLine.clear();
-        radiusLine.lineStyle(5, RADIUS_COLOR);
+        // player.x -= 1 * Math.cos(player.angle); // CHANGE TO SPEED
+        // player.y -= 1 * Math.sin(player.angle); // CHANGE TO SPEED
     }
+
+    // player.vx += player.ax;
+    // player.yx += player.ax;
+
+    player.x += player.vx;
+    player.y += player.vy;
+
+    // if(player.ax > 0)
+    // {
+    //     player.ax -= PLAYER_ACCEL_DECAY;
+
+    //     if(player.ax < 0)
+    //     {
+    //         player.ax = 0;
+    //     }
+    // }
+
+    // if(player.ax < 0)
+    // {
+    //     player.ax += PLAYER_ACCEL_DECAY;
+        
+    //     if(player.ax > 0)
+    //     {
+    //         player.ax = 0;
+    //     }
+    // }
+
+    // if(player.ay > 0)
+    // {
+    //     player.ax -= PLAYER_ACCEL_DECAY;
+
+    //     if(player.ay < 0)
+    //     {
+    //         player.ay = 0;
+    //     }
+    // }
+
+    // if(player.ay < 0)
+    // {
+    //     player.ay += PLAYER_ACCEL_DECAY;
+        
+    //     if(player.ay > 0)
+    //     {
+    //         player.ay = 0;
+    //     }
+    // }
 
     // radiusLine.lineStyle(5, 0xffffff).moveTo(player.x, player.y).lineTo(0, -radius);
     // radiusLine.beginPath();
     // radiusLine.moveTo(player.x, player.y);
-    radiusLine.x = player.x + (player.width - 1) / 2;
-    radiusLine.y = player.y + (player.height - 2.5) / 2;
-    radiusLine.lineTo(0, - radius);
+    radiusLine.x = player.x;
+    radiusLine.y = player.y;
+    radiusLine.clear();
+    radiusLine.lineStyle(5, RADIUS_COLOR);
+    radiusLine.lineTo(cx - player.x, cy - player.y);
+    
     //p(radius);
     // radiusLine.stroke();
 
 
     for (shot in playerShots)
     {
-        playerShots[shot].y -= 10; // CHANGE TO SPEED
+        playerShots[shot].y -= 10 * Math.sin(playerShots[shot].angle); // CHANGE TO SPEED
+        playerShots[shot].x -= 10 * Math.cos(playerShots[shot].angle);
     }
 
     // Stores the current state of key presses, which will lag behind by one frame on the next frame
