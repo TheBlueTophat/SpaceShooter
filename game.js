@@ -87,12 +87,16 @@ function p(val)
 let player = new PIXI.Graphics();
 player.beginFill(0x00CCAA);
 player.drawRect(0, 0, 10, 10);
-player.x = (WORLD_WIDTH - 10) / 2;
-player.y = (WORLD_HEIGHT - 10) / 2;
+//player.x = (WORLD_WIDTH - 10) / 2;
+// player.y = (WORLD_HEIGHT - 10) / 2;
+player.x = 100;
+player.y = 100;
 
 //player.drawTo(0, -20);
 
 world.stage.addChild(player);
+
+player.angle = -90; // idk if this will break later or not
 
 const RADIUS_COLOR = 0x555555;
 // Draws a line for the rotation radius
@@ -133,15 +137,31 @@ function mainLoop(delta)
     }
 
 
-    if(kD.right)
-    {
-        player.x += 1;
-    }
+    // if(kD.right)
+    // {
+    //     player.x += 1;
+    // }
 
-    if(kD.left)
+    // if(kD.left)
+    // {
+    //     player.x -= 1;
+    // }
+
+    if(kD.right) // cc
     {
-        player.x -= 1;
+        // p'x = cos(theta) * (px-ox) - sin(theta) * (py-oy) + ox
+        // p'y = sin(theta) * (px-ox) + cos(theta) * (py-oy) + oy
+        // player.angle = (player.angle - (2 * Math.PI) * 0.1) % (2 * Math.PI);
+        // player.angle = 0.01;
+        let rA = 0.01;
+
+        let cx = 1;//(WORLD_WIDTH / 2);
+        let cy = 1;//(WORLD_HEIGHT / 2);
+
+        player.x = (Math.cos(rA) * (player.x - cx)) - (Math.sin(rA) * (player.y - cy));// + player.x;
+        player.y = (Math.sin(rA) * (player.x - cx)) + (Math.cos(rA) * (player.y - cy));// + player.y;
     }
+    p("x: " + String(player.x) + " y: " + String(player.y));
 
     if(kD.up)
     {
@@ -189,10 +209,10 @@ function mainLoop(delta)
     // radiusLine.lineStyle(5, 0xffffff).moveTo(player.x, player.y).lineTo(0, -radius);
     // radiusLine.beginPath();
     // radiusLine.moveTo(player.x, player.y);
-    radiusLine.x = player.x;
-    radiusLine.y = player.y;
+    radiusLine.x = player.x + (player.width - 1) / 2;
+    radiusLine.y = player.y + (player.height - 2.5) / 2;
     radiusLine.lineTo(0, - radius);
-    p(radius);
+    //p(radius);
     // radiusLine.stroke();
 
 
