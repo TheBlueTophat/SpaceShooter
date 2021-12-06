@@ -82,6 +82,18 @@ function p(val)
     console.log(val);
 }
 
+// Accepts an object as an input, and number of decimal places of precision. The object's key is the name, and the value is the value.
+function log(info, precision = 4)
+{
+    for(i in info)
+    {
+        info[i] = info[i].toFixed(precision);
+        info[i] = parseFloat(info[i]);
+    }
+
+    p(info);
+}
+
 // Creates the first sprite, adds it to the stage
 // let sprite = PIXI.Sprite.from("random_goomba_head.png");
 let player = new PIXI.Graphics();
@@ -96,7 +108,9 @@ player.vy = 0;
 player.ax = 0;
 player.ay = 0;
 
-const PLAYER_ACCEL_DECAY = 0.1;
+const PLAYER_ACCEL_DECAY = 1;
+const VEL_MAX = 2; // turning/drifting velocity maximum
+const ACCEL_MAX = 2;
 
 //player.drawTo(0, -20);
 
@@ -121,6 +135,15 @@ let radius = MIN_RADIUS;
 
 let playerShots = [];
 
+
+// Debug stuff
+let accelVisualizer = new PIXI.Graphics();
+accelVisualizer.x = 0;
+accelVisualizer.y = 0;
+accelVisualizer.beginFill(0xCC0000);
+accelVisualizer.drawRect(0, 0, 5, 5);
+world.stage.addChild(accelVisualizer);
+
 // Main game loop
 let elapsed = 0.0;
 world.ticker.add((delta) => mainLoop(delta));
@@ -130,7 +153,7 @@ function mainLoop(delta)
     elapsed += delta;
 
     let cx = player.x - Math.cos(player.angle) * radius;
-    let cy = player.y - Math.sin(player.angle) * radius;
+    let cy = player.y + Math.sin(player.angle) * radius;
 
     // Handles justPressed functionality (move to function?)
     for (const key in kJP)
@@ -171,21 +194,26 @@ function mainLoop(delta)
         // player.x = (Math.cos(rA) * (player.x - cx)) - (Math.sin(rA) * (player.y - cy));// + player.x;
         // player.y = (Math.sin(rA) * (player.x - cx)) + (Math.cos(rA) * (player.y - cy));// + player.y;
 
-        let rA = -(3.14/180) / (radius / MIN_RADIUS) * 10; // 1 deg
+        let rA = -(3.14/180) / (radius / MIN_RADIUS) * delta; // 1 deg
         // let cx = WORLD_WIDTH / 2;
         // let cy = WORLD_HEIGHT / 2;
         
 
         // player.x = Math.cos(rA) * (player.x - cx) - Math.sin(rA) * (player.y - cy) + cx;
         // player.y = Math.sin(rA) * (player.x - cx) + Math.cos(rA) * (player.y - cy) + cy;
-        // player.ax += Math.cos(rA) * (player.x - cx) - Math.sin(rA) * (player.y - cy);
-        // player.ay += Math.sin(rA) * (player.x - cx) + Math.cos(rA) * (player.y - cy);
-        player.vx += -Math.sin(rA) * (player.x - cx) - Math.cos(rA) * (player.y - cy);
-        player.vy += Math.cos(rA) * (player.x - cx) - Math.sin(rA) * (player.y - cy);
+        //// player.ax += (Math.cos(rA) * (player.x - cx) - Math.sin(rA) * (player.y - cy)) * delta;
+        //// player.ay += (Math.sin(rA) * (player.x - cx) + Math.cos(rA) * (player.y - cy)) * delta;
+        // player.ax += (-Math.sin(rA) * (player.x - cx) - Math.cos(rA) * (player.y - cy)) * delta;
+        // player.ay += (Math.cos(rA) * (player.x - cx) - Math.sin(rA) * (player.y - cy)) * delta;
 
-        player.angle += rA;
+        player.angle += rA * delta;
 
-        p("cx: " + String(cx) + " cy: " + String(cy));
+        player.ax += -Math.cos(player.angle) * 1 * delta;
+        player.ay += -Math.sin(player.angle) * 1 * delta;
+
+        
+
+        log({"cx":cx, "cy":cy});
 
         let dot = new PIXI.Graphics();
         dot.beginFill(0x00CC00);
@@ -194,8 +222,8 @@ function mainLoop(delta)
         dot.y = cy;
         world.stage.addChild(dot);
     }
-    p("x: " + String(player.x) + " y: " + String(player.y) + " radius: " + String(radius) + " player.angle: " + String(player.angle));
-    p("ax: " + String(player.ax) + " ay: " + String(player.ay));
+    log({"x": player.x, "y": player.y, "radius": radius, "angle (deg)": player.angle * 180 / 3.14}, 4);
+    log({"vx": player.vx, "vy": player.vy, "vtot": ((player.vx ** 2 + player.vy ** 2 )**.5), "ax": player.ax, "ay": player.ay}, 4);
 
     if(kD.left)
     {
@@ -207,7 +235,7 @@ function mainLoop(delta)
         player.y = Math.sin(rA) * (player.x - cx) + Math.cos(rA) * (player.y - cy) + cy;
         player.angle += rA;
 
-        p("cx: " + String(cx) + " cy: " + String(cy));
+        p("cx: " + String(cx) + " cy: " + String(cy) + " vtot: ");
 
         let dot = new PIXI.Graphics();
         dot.beginFill(0x00CC00);
@@ -269,51 +297,105 @@ function mainLoop(delta)
         // player.y -= 1 * Math.sin(player.angle); // CHANGE TO SPEED
     }
 
-    // player.vx += player.ax;
-    // player.yx += player.ax;
+    player.vx += player.ax * delta;
+    player.vy += player.ay * delta;
 
-    player.x += player.vx;
-    player.y += player.vy;
+    player.vx += ((player.vx > 0) * -0.11 + (player.vx < 0) * 0.11) * delta;
+    player.vy += ((player.vy > 0) * -0.11 + (player.vy < 0) * 0.11) * delta;
 
-    // if(player.ax > 0)
+    player.ax += ((player.ax > 0) * -0.11 + (player.ax < 0) * 0.11) * delta;
+    player.ay += ((player.ay > 0) * -0.11 + (player.ay < 0) * 0.11) * delta;
+
+    // Scales down the player's velocity to be equal to VEL_MAX if it's more than that
+    // if((player.vx**2 + player.vy**2)**0.5 > VEL_MAX && VEL_MAX > 0)
     // {
-    //     player.ax -= PLAYER_ACCEL_DECAY;
-
-    //     if(player.ax < 0)
-    //     {
-    //         player.ax = 0;
-    //     }
+    //     player.vx = ((VEL_MAX ** 2) * (player.vx ** 2) / ((player.vx ** 2) + (player.vy ** 2)))**0.5;
+    //     player.vx = ((VEL_MAX ** 2) * (player.vy ** 2) / ((player.vx ** 2) + (player.vy ** 2)))**0.5;
     // }
 
-    // if(player.ax < 0)
-    // {
-    //     player.ax += PLAYER_ACCEL_DECAY;
+    if(player.vx > VEL_MAX)
+    {
+        player.vx = VEL_MAX;
+    }
+
+    if(player.vx < -VEL_MAX)
+    {
+        player.vx = -VEL_MAX;
+    }
+
+    if(player.vy > VEL_MAX)
+    {
+        player.vy = VEL_MAX;
+    }
+
+    if(player.vy < -VEL_MAX)
+    {
+        player.vy = -VEL_MAX;
+    }
+
+
+    if(player.ax > ACCEL_MAX)
+    {
+        player.ax = ACCEL_MAX;
+    }
+
+    if(player.ax < -ACCEL_MAX)
+    {
+        player.ax = -ACCEL_MAX;
+    }
+
+    if(player.ay > ACCEL_MAX)
+    {
+        player.ay = ACCEL_MAX;
+    }
+
+    if(player.ay < -ACCEL_MAX)
+    {
+        player.ay = -ACCEL_MAX;
+    }
+
+    player.x += player.vx * delta;
+    player.y += player.vy * delta;
+
+    if(player.ax > 0)
+    {
+        player.ax -= PLAYER_ACCEL_DECAY;
+
+        if(player.ax < 0)
+        {
+            player.ax = 0;
+        }
+    }
+
+    if(player.ax < 0)
+    {
+        player.ax += PLAYER_ACCEL_DECAY;
         
-    //     if(player.ax > 0)
-    //     {
-    //         player.ax = 0;
-    //     }
-    // }
+        if(player.ax > 0)
+        {
+            player.ax = 0;
+        }
+    }
 
-    // if(player.ay > 0)
-    // {
-    //     player.ax -= PLAYER_ACCEL_DECAY;
+    if(player.ay > 0)
+    {
+        player.ax -= PLAYER_ACCEL_DECAY;
 
-    //     if(player.ay < 0)
-    //     {
-    //         player.ay = 0;
-    //     }
-    // }
+        if(player.ay < 0)
+        {
+            player.ay = 0;
+        }
+    }
 
-    // if(player.ay < 0)
-    // {
-    //     player.ay += PLAYER_ACCEL_DECAY;
+    if(player.ay < 0)
+    {
+        player.ay += PLAYER_ACCEL_DECAY;
         
-    //     if(player.ay > 0)
-    //     {
-    //         player.ay = 0;
-    //     }
-    // }
+        if(player.ay > 0)
+        {
+            player.ay = 0;
+        }
+    }
 
     // radiusLine.lineStyle(5, 0xffffff).moveTo(player.x, player.y).lineTo(0, -radius);
     // radiusLine.beginPath();
@@ -324,6 +406,9 @@ function mainLoop(delta)
     radiusLine.lineStyle(5, RADIUS_COLOR);
     radiusLine.lineTo(cx - player.x, cy - player.y);
     
+    accelVisualizer.x = player.ax * 10 + ACCEL_MAX * 10;
+    accelVisualizer.y = player.ay * 10 + ACCEL_MAX * 10;
+    log({"axxx":accelVisualizer.x, "ayyy":accelVisualizer.y});
     //p(radius);
     // radiusLine.stroke();
 
