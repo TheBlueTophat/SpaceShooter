@@ -153,7 +153,7 @@ function mainLoop(delta)
     elapsed += delta;
 
     let cx = player.x - Math.cos(player.angle) * radius;
-    let cy = player.y + Math.sin(player.angle) * radius;
+    let cy = player.y - Math.sin(player.angle) * radius;
 
     // Handles justPressed functionality (move to function?)
     for (const key in kJP)
@@ -206,10 +206,19 @@ function mainLoop(delta)
         // player.ax += (-Math.sin(rA) * (player.x - cx) - Math.cos(rA) * (player.y - cy)) * delta;
         // player.ay += (Math.cos(rA) * (player.x - cx) - Math.sin(rA) * (player.y - cy)) * delta;
 
-        player.angle += rA * delta;
+        player.angle = (player.angle - rA * delta);
 
-        player.ax += -Math.cos(player.angle) * 1 * delta;
-        player.ay += -Math.sin(player.angle) * 1 * delta;
+        if(player.angle < 0)
+        {
+            player.angle += (2 * Math.PI);
+        }
+        else if(player.angle >= (2 * Math.PI))
+        {
+            player.angle -= (2 * Math.PI);
+        }
+
+        player.ax += Math.cos(player.angle - 2 * Math.PI) * 1 * delta;
+        player.ay += Math.sin(player.angle - 2 * Math.PI) * 1 * delta;
 
         
 
@@ -224,24 +233,25 @@ function mainLoop(delta)
     }
     log({"x": player.x, "y": player.y, "radius": radius, "angle (deg)": player.angle * 180 / 3.14}, 4);
     log({"vx": player.vx, "vy": player.vy, "vtot": ((player.vx ** 2 + player.vy ** 2 )**.5), "ax": player.ax, "ay": player.ay}, 4);
+    log({"cx":cx, "cy":cy, "cx-px":(cx - player.x), "cy-py":(cy-player.y)}, 4);
 
     if(kD.left)
     {
         let rA = (3.14/180) / (radius / MIN_RADIUS) * 10;
-        let cx = player.x - Math.cos(player.angle) * radius;
-        let cy = player.y - Math.sin(player.angle) * radius;
+        let cx2 = cx;//player.x - Math.cos(player.angle) * radius;
+        let cy2 = cy;//player.y - Math.sin(player.angle) * radius;
 
-        player.x = Math.cos(rA) * (player.x - cx) - Math.sin(rA) * (player.y - cy) + cx;
-        player.y = Math.sin(rA) * (player.x - cx) + Math.cos(rA) * (player.y - cy) + cy;
-        player.angle += rA;
+        player.x = Math.cos(rA) * (player.x - cx2) - Math.sin(rA) * (player.y - cy2) + cx2;
+        player.y = Math.sin(rA) * (player.x - cx2) + Math.cos(rA) * (player.y - cy2) + cy2;
+        player.angle = (player.angle + rA * delta) % (2 * Math.PI);
 
-        p("cx: " + String(cx) + " cy: " + String(cy) + " vtot: ");
+        p("cx2: " + String(cx2) + " cy2: " + String(cy2) + " vtot: ");
 
         let dot = new PIXI.Graphics();
         dot.beginFill(0x00CC00);
         dot.drawRect(0, 0, 1, 1);
-        dot.x = cx;
-        dot.y = cy;
+        dot.x = cx2;
+        dot.y = cy2;
         world.stage.addChild(dot);
     }
 
@@ -404,10 +414,13 @@ function mainLoop(delta)
     radiusLine.y = player.y;
     radiusLine.clear();
     radiusLine.lineStyle(5, RADIUS_COLOR);
-    radiusLine.lineTo(cx - player.x, cy - player.y);
+    // radiusLine.lineTo(cx - player.x, cy - player.y);
+    radiusLine.lineTo(player.x - cx, player.y - cy);
     
-    accelVisualizer.x = player.ax * 10 + ACCEL_MAX * 10;
-    accelVisualizer.y = player.ay * 10 + ACCEL_MAX * 10;
+    // accelVisualizer.x = player.ax * 10 + ACCEL_MAX * 10;
+    // accelVisualizer.y = player.ay * 10 + ACCEL_MAX * 10;
+    accelVisualizer.x = player.ax * 10 + player.x;
+    accelVisualizer.y = player.ay * 10 + player.y;
     log({"axxx":accelVisualizer.x, "ayyy":accelVisualizer.y});
     //p(radius);
     // radiusLine.stroke();
