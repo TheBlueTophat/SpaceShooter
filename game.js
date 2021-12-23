@@ -33,8 +33,6 @@ const kBKey = {up: ["w", "W"], down: ["s", "S"], left: ["a", "A"], right: ["d", 
 
 function keyHandler(event, setState)
 {
-    // console.log(event.key);
-
     // I don't get why this doesn't throw an error whenever a key is pressed that isn't in the kbKey
     // What getKeyByValue returns here is "undefined" for any keys that aren't the ones already defined.
     // I don't see any error otherwise though. Oh well. It works! 
@@ -67,6 +65,30 @@ function getKeyByValue(object, value)
     // return Object.keys(object).find(key => object[key] === value); // Old code, probably more efficient but not complex enough for what I need.
 }
 
+function justPressedHandler()
+{
+    // Handles justPressed functionality
+    for (const key in kJP)
+    {
+        if(kDPrev[key] == false && kD[key] == true)
+        {
+            kJP[key] = true;
+        }
+        else
+        {
+            kJP[key] = false;
+        }  
+    }
+}
+
+function previousKeyHandler()
+{
+    // Stores the current state of key presses, which will lag behind by one frame on the next frame
+    for (const key in kDPrev)
+    {
+        kDPrev[key] = kD[key];
+    }
+}
 
 function playSound(path)
 {
@@ -107,6 +129,8 @@ player.vx = 0;
 player.vy = 0;
 player.ax = 0;
 player.ay = 0;
+player.angleV = 0; // rotational velocity
+player.angleA = 0; // rotational acceleration
 
 const PLAYER_ACCEL_DECAY = 1;
 const VEL_MAX = 2; // turning/drifting velocity maximum
@@ -152,61 +176,18 @@ function mainLoop(delta)
 {
     elapsed += delta;
 
+    // GOOD
     let cx = player.x - Math.cos(player.angle) * radius;
-    let cy = player.y - Math.sin(player.angle) * radius;
-
-    // Handles justPressed functionality (move to function?)
-    for (const key in kJP)
-    {
-        if(kDPrev[key] == false && kD[key] == true)
-        {
-            kJP[key] = true;
-        }
-        else
-        {
-            kJP[key] = false;
-        }  
-    }
+    let cy = player.y + Math.sin(player.angle) * radius;
 
 
-    // if(kD.right)
-    // {
-    //     player.x += 1;
-    // }
+    justPressedHandler();
 
-    // if(kD.left)
-    // {
-    //     player.x -= 1;
-    // }
-
-    if(kD.right) // cc
+    if(kD.right)
     {
         // p'x = cos(theta) * (px-ox) - sin(theta) * (py-oy) + ox
         // p'y = sin(theta) * (px-ox) + cos(theta) * (py-oy) + oy
-        // player.angle = (player.angle - (2 * Math.PI) * 0.1) % (2 * Math.PI);
-        // player.angle = 0.01;
-
-        // let rA = 0.01;
-
-        // let cx = 1;//(WORLD_WIDTH / 2);
-        // let cy = 1;//(WORLD_HEIGHT / 2);
-
-        // player.x = (Math.cos(rA) * (player.x - cx)) - (Math.sin(rA) * (player.y - cy));// + player.x;
-        // player.y = (Math.sin(rA) * (player.x - cx)) + (Math.cos(rA) * (player.y - cy));// + player.y;
-
-        let rA = -(3.14/180) / (radius / MIN_RADIUS) * delta; // 1 deg
-        // let cx = WORLD_WIDTH / 2;
-        // let cy = WORLD_HEIGHT / 2;
-        
-
-        // player.x = Math.cos(rA) * (player.x - cx) - Math.sin(rA) * (player.y - cy) + cx;
-        // player.y = Math.sin(rA) * (player.x - cx) + Math.cos(rA) * (player.y - cy) + cy;
-        //// player.ax += (Math.cos(rA) * (player.x - cx) - Math.sin(rA) * (player.y - cy)) * delta;
-        //// player.ay += (Math.sin(rA) * (player.x - cx) + Math.cos(rA) * (player.y - cy)) * delta;
-        // player.ax += (-Math.sin(rA) * (player.x - cx) - Math.cos(rA) * (player.y - cy)) * delta;
-        // player.ay += (Math.cos(rA) * (player.x - cx) - Math.sin(rA) * (player.y - cy)) * delta;
-
-        player.angle = (player.angle - rA * delta);
+        let rA = -(3.14/180) * delta; // 1 deg
 
         if(player.angle < 0)
         {
@@ -217,9 +198,7 @@ function mainLoop(delta)
             player.angle -= (2 * Math.PI);
         }
 
-        player.ax += Math.cos(player.angle - 2 * Math.PI) * 1 * delta;
-        player.ay += Math.sin(player.angle - 2 * Math.PI) * 1 * delta;
-
+        player.angleA += 0.3 / (radius / MAX_RADIUS) * rA * delta; // DEBUG
         
 
         log({"cx":cx, "cy":cy});
@@ -231,41 +210,110 @@ function mainLoop(delta)
         dot.y = cy;
         world.stage.addChild(dot);
     }
-    log({"x": player.x, "y": player.y, "radius": radius, "angle (deg)": player.angle * 180 / 3.14}, 4);
-    log({"vx": player.vx, "vy": player.vy, "vtot": ((player.vx ** 2 + player.vy ** 2 )**.5), "ax": player.ax, "ay": player.ay}, 4);
-    log({"cx":cx, "cy":cy, "cx-px":(cx - player.x), "cy-py":(cy-player.y)}, 4);
 
     if(kD.left)
     {
-        let rA = (3.14/180) / (radius / MIN_RADIUS) * 10;
-        let cx2 = cx;//player.x - Math.cos(player.angle) * radius;
-        let cy2 = cy;//player.y - Math.sin(player.angle) * radius;
+        let rA = - (3.14/180) * delta; // 1 deg
 
-        player.x = Math.cos(rA) * (player.x - cx2) - Math.sin(rA) * (player.y - cy2) + cx2;
-        player.y = Math.sin(rA) * (player.x - cx2) + Math.cos(rA) * (player.y - cy2) + cy2;
-        player.angle = (player.angle + rA * delta) % (2 * Math.PI);
+        if(player.angle < 0)
+        {
+            player.angle += (2 * Math.PI);
+        }
+        else if(player.angle >= (2 * Math.PI))
+        {
+            player.angle -= (2 * Math.PI);
+        }
 
-        p("cx2: " + String(cx2) + " cy2: " + String(cy2) + " vtot: ");
+        player.angleA -= 0.3 * rA * delta; // DEBUG
+
+        log({"cx":cx, "cy":cy});
 
         let dot = new PIXI.Graphics();
         dot.beginFill(0x00CC00);
         dot.drawRect(0, 0, 1, 1);
-        dot.x = cx2;
-        dot.y = cy2;
+        dot.x = cx;
+        dot.y = cy;
         world.stage.addChild(dot);
     }
 
-    if(kD.up)
+    if(!kD.right && !kD.left)
+    {
+        if(player.rA != 0)
+        {
+            //player.rA = 0;
+        }
+    }
+
+    log({"x": player.x, "y": player.y, "radius": radius, "angle (deg)": player.angle * 180 / 3.14}, 4);
+    log({"vx": player.vx, "vy": player.vy, "vtot": ((player.vx ** 2 + player.vy ** 2 )**.5), "ax": player.ax, "ay": player.ay}, 4);
+    log({"cx":cx, "cy":cy, "cx-px":(cx - player.x), "cy-py":(cy-player.y)}, 4);
+
+    // if(player.angleA > 0)
+    // {
+    //     player.angleA = Math.max(player.angleA - 0.008 * delta, 0);
+    // }
+
+    // if(player.angleA < 0)
+    // {
+    //     player.angleA = Math.min(player.angleA + 0.008 * delta, 0);
+    // }
+
+    player.angleV += player.angleA * delta;
+
+    // Bounds angular velocity
+    if(player.angleV > 0)
+    {
+        player.angleV = Math.min(player.angleV, 0.2);
+    }
+
+    if(player.angleV < 0)
+    {
+        player.angleV = Math.max(player.angleV, -0.2);
+    }   
+
+    player.vx += Math.cos(-player.angle - player.angleV)*radius * player.angleV;
+    player.vy += Math.sin(-player.angle - player.angleV)*radius * player.angleV;
+
+    player.angle += player.angleV;
+    
+    log({"angleV":player.angleV, "angleA":player.angleA});
+
+    
+    
+    log({"angleV":player.angleV, "angleA":player.angleA});
+
+    // if(kD.left)
+    // {
+    //     let rA = (3.14/180) / (radius / MIN_RADIUS) * 10;
+    //     let cx2 = cx;//player.x - Math.cos(player.angle) * radius;
+    //     let cy2 = cy;//player.y - Math.sin(player.angle) * radius;
+
+    //     player.x = Math.cos(rA) * (player.x - cx2) - Math.sin(rA) * (player.y - cy2) + cx2;
+    //     player.y = Math.sin(rA) * (player.x - cx2) + Math.cos(rA) * (player.y - cy2) + cy2;
+    //     player.angle = (player.angle + rA * delta) % (2 * Math.PI);
+
+    //     p("cx2: " + String(cx2) + " cy2: " + String(cy2) + " vtot: ");
+
+    //     let dot = new PIXI.Graphics();
+    //     dot.beginFill(0x00CC00);
+    //     dot.drawRect(0, 0, 1, 1);
+    //     dot.x = cx2;
+    //     dot.y = cy2;
+    //     world.stage.addChild(dot);
+    // }
+
+    if(kD.up && false)
     {
         // player.y -= 1;
         player.x -= 1 * Math.cos(player.angle); // CHANGE TO SPEED
         player.y -= 1 * Math.sin(player.angle); // CHANGE TO SPEED
     }
 
-    if(kD.down)
+    if(kD.down && false)
     {
         player.x += 1 * Math.cos(player.angle); // CHANGE TO SPEED
         player.y += 1 * Math.sin(player.angle); // CHANGE TO SPEED
+        
     }
 
     if(kJP.shoot)
@@ -277,44 +325,32 @@ function mainLoop(delta)
         newShot.drawRect(0, 0, 5, 10); // CHANGE TO WIDTH AND HEIGHT
         newShot.x = player.x + (player.width - 5) / 2; // CHANGE TO WIDTH AND HEIGHT
         newShot.y = player.y + (player.height - 10) / 2; // CHANGE TO WIDTH AND HEIGHT
-        newShot.angle = player.angle;
+        newShot.angle = -player.angle;
 
         world.stage.addChild(newShot);
         playerShots.push(newShot);
     }
 
-    if(kD.increaseRadius)
+    if(kD.increaseRadius || kD.up)
     {
-        radius += 1;
+        radius += 5;
         if(radius > MAX_RADIUS)
         {
             radius = MAX_RADIUS;
         }
-
-        // player.x += 1 * Math.cos(player.angle); // CHANGE TO SPEED
-        // player.y += 1 * Math.sin(player.angle); // CHANGE TO SPEED
     }
 
-    if(kD.decreaseRadius)
+    if(kD.decreaseRadius || kD.down)
     {
-        radius -= 1;
+        radius -= 5;
         if(radius < MIN_RADIUS)
         {
             radius = MIN_RADIUS;
         }
-
-        // player.x -= 1 * Math.cos(player.angle); // CHANGE TO SPEED
-        // player.y -= 1 * Math.sin(player.angle); // CHANGE TO SPEED
     }
 
     player.vx += player.ax * delta;
     player.vy += player.ay * delta;
-
-    player.vx += ((player.vx > 0) * -0.11 + (player.vx < 0) * 0.11) * delta;
-    player.vy += ((player.vy > 0) * -0.11 + (player.vy < 0) * 0.11) * delta;
-
-    player.ax += ((player.ax > 0) * -0.11 + (player.ax < 0) * 0.11) * delta;
-    player.ay += ((player.ay > 0) * -0.11 + (player.ay < 0) * 0.11) * delta;
 
     // Scales down the player's velocity to be equal to VEL_MAX if it's more than that
     // if((player.vx**2 + player.vy**2)**0.5 > VEL_MAX && VEL_MAX > 0)
@@ -407,24 +443,15 @@ function mainLoop(delta)
         }
     }
 
-    // radiusLine.lineStyle(5, 0xffffff).moveTo(player.x, player.y).lineTo(0, -radius);
-    // radiusLine.beginPath();
-    // radiusLine.moveTo(player.x, player.y);
     radiusLine.x = player.x;
     radiusLine.y = player.y;
     radiusLine.clear();
     radiusLine.lineStyle(5, RADIUS_COLOR);
-    // radiusLine.lineTo(cx - player.x, cy - player.y);
-    radiusLine.lineTo(player.x - cx, player.y - cy);
+    radiusLine.lineTo((cx - player.x), (cy - player.y));
     
-    // accelVisualizer.x = player.ax * 10 + ACCEL_MAX * 10;
-    // accelVisualizer.y = player.ay * 10 + ACCEL_MAX * 10;
     accelVisualizer.x = player.ax * 10 + player.x;
     accelVisualizer.y = player.ay * 10 + player.y;
     log({"axxx":accelVisualizer.x, "ayyy":accelVisualizer.y});
-    //p(radius);
-    // radiusLine.stroke();
-
 
     for (shot in playerShots)
     {
@@ -432,9 +459,5 @@ function mainLoop(delta)
         playerShots[shot].x -= 10 * Math.cos(playerShots[shot].angle);
     }
 
-    // Stores the current state of key presses, which will lag behind by one frame on the next frame
-    for (const key in kDPrev)
-    {
-        kDPrev[key] = kD[key];
-    }
+    previousKeyHandler();
 }
