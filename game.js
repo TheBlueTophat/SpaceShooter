@@ -6,6 +6,8 @@
 
 // Remember, Ctrl + Shift + R to reload the page as well as refresh the cache
 
+const UNDEF = undefined;
+
 // Initializes the stage, prints some relevant  info.
 const WORLD_WIDTH = 1000;
 const WORLD_HEIGHT = 600;
@@ -17,6 +19,15 @@ console.log(window.innerWidth);
 console.log(window.innerHeight);
 console.log("Test");
 
+let debug = new PIXI.Text("Example",{fontFamily : 'Courier New', fontSize: 11, fill : 0xffffff, align : 'left'});
+world.stage.addChild(debug);
+
+let debugBank = [100]; // Load debugging messages to be shown into here
+// Makes it so that the length of the array is 100 already. Not sure if necessary.
+for (string in debugBank)
+{
+    debugBank[string] = "";
+}
 
 // Initializes the input handlers
 document.addEventListener("keydown", function(){keyHandler(event, true)}, false);
@@ -105,7 +116,7 @@ function p(val)
 }
 
 // Accepts an object as an input, and number of decimal places of precision. The object's key is the name, and the value is the value.
-function log(info, precision = 4)
+function log(info, precision = 4, returnString = false, formatString = false)
 {
     for(i in info)
     {
@@ -114,7 +125,52 @@ function log(info, precision = 4)
     }
 
     p(info);
+
+    if(returnString)
+    {
+        let newInfo = JSON.stringify(info);
+        if(formatString)
+        {
+            return newInfo.replace(/[{}]/g, "").replace(/[,]/g, "\t\t\t");
+        }
+
+        return newInfo;
+    }
+
+    return info; // in case you wanna do something with it
 }
+
+// Turns an object with multiple key/value pairs, used for naming variables and describing their contents, into a string fit for display
+// info is the object, looking something like {"var1":val2, "var2":val2}
+// precision is how many decimal places to have (I'm pretty sure it rounds but not 100%)
+// print determines whether or not to print the info to the console as well (defaults to not because this basically replaces the console lo)
+function debugString(info, precision = 4, print = false)
+{
+    for(i in info)
+    {
+        info[i] = info[i].toFixed(precision);
+        info[i] = parseFloat(info[i]);
+    }
+
+    let newInfo = JSON.stringify(info).replace(/[{}]/g, "").replace(/[,]/g, "\t\t\t").replace(/[:]/g, "\t\t\t");
+
+    if(print) p(info);
+
+    return newInfo;
+}
+
+// Returns parameter num clamped between min and max (inclusive)
+function clamp(num, min, max)
+{
+    if(min > max)
+    {
+        return Math.min(Math.max(num, max), min);
+    }
+
+    return Math.min(Math.max(num, min), max);
+}
+
+
 
 // Creates the first sprite, adds it to the stage
 // let sprite = PIXI.Sprite.from("random_goomba_head.png");
@@ -161,12 +217,26 @@ let playerShots = [];
 
 
 // Debug stuff
-let accelVisualizer = new PIXI.Graphics();
-accelVisualizer.x = 0;
-accelVisualizer.y = 0;
-accelVisualizer.beginFill(0xCC0000);
-accelVisualizer.drawRect(0, 0, 5, 5);
-world.stage.addChild(accelVisualizer);
+// let accelVisualizer = new PIXI.Graphics();
+// accelVisualizer.x = 0;
+// accelVisualizer.y = 0;
+// accelVisualizer.beginFill(0xCC0000);
+// accelVisualizer.drawRect(0, 0, 5, 5);
+// world.stage.addChild(accelVisualizer);
+
+let dummy = new PIXI.Graphics();
+dummy.x = (WORLD_WIDTH - 20) / 2;
+dummy.y = WORLD_HEIGHT / 2;
+dummy.vx = 0;
+dummy.vy = 0;
+dummy.ax = 0;
+dummy.ay = 0;
+dummy.angle = (3/2) * Math.PI;
+dummy.angleV = 0;
+dummy.angleA = 0;
+dummy.beginFill(0x00CC00);
+dummy.drawRect(0, 0, 10, 10);
+world.stage.addChild(dummy);
 
 // Main game loop
 let elapsed = 0.0;
@@ -189,6 +259,8 @@ function mainLoop(delta)
         // p'y = sin(theta) * (px-ox) + cos(theta) * (py-oy) + oy
         let rA = -(3.14/180) * delta; // 1 deg
 
+
+
         if(player.angle < 0)
         {
             player.angle += (2 * Math.PI);
@@ -201,7 +273,7 @@ function mainLoop(delta)
         player.angleA += 0.3 / (radius / MAX_RADIUS) * rA * delta; // DEBUG
         
 
-        log({"cx":cx, "cy":cy});
+        debugBank[0] = debugString({"cx":cx, "cy":cy});
 
         let dot = new PIXI.Graphics();
         dot.beginFill(0x00CC00);
@@ -209,7 +281,48 @@ function mainLoop(delta)
         dot.x = cx;
         dot.y = cy;
         world.stage.addChild(dot);
+
+        // DEBUG 2
+        // let dot2 = new PIXI.Graphics();
+        // dot2.beginFill(0x00CC00);
+        // dot2.drawRect(0, 0, 1, 1);
+        // dot2.x = cx;
+        // dot2.y = cy;
+        // world.stage.addChild(dot2);
+
+        // dummy.angleV += rA;
+
+        // dummy.angle += dummy.angleV;
+        dummy.angleV += rA;
+
+        if(dummy.angle < 0)
+        {
+            dummy.angle += (2 * Math.PI);
+        }
+        else if(dummy.angle >= (2 * Math.PI))
+        {
+            dummy.angle -= (2 * Math.PI);
+        }
+
+        // dummy.vx += Math.cos(dummy.angle);
+        // dummy.vy += Math.sin(dummy.angle);
+        // velocity adds the derivative of the trig of the angle instead:
+        dummy.angle += dummy.angleV * delta;
+        dummy.vx = -Math.sin(dummy.angle) * 2 * delta;
+        dummy.vy = Math.cos(dummy.angle) * 2 * delta;
     }
+
+    dummy.x += dummy.vx;
+    dummy.y += dummy.vy;
+
+    dummy.angleV *= 0.9; // limits to 0 reasonably fast
+    dummy.vx *= 0.95;
+    dummy.vy *= 0.95;
+
+    // dummy.x += Math.cos(dummy.angle) * ;
+    // dummy.y += Math.sin(dummy.angle);
+    
+    debugBank[1] = debugString({"dvx":dummy.vx, "dvy":dummy.vy});
 
     if(kD.left)
     {
@@ -226,7 +339,7 @@ function mainLoop(delta)
 
         player.angleA -= 0.3 * rA * delta; // DEBUG
 
-        log({"cx":cx, "cy":cy});
+        debugBank[0] = debugString({"cx":cx, "cy":cy});
 
         let dot = new PIXI.Graphics();
         dot.beginFill(0x00CC00);
@@ -244,9 +357,9 @@ function mainLoop(delta)
         }
     }
 
-    log({"x": player.x, "y": player.y, "radius": radius, "angle (deg)": player.angle * 180 / 3.14}, 4);
-    log({"vx": player.vx, "vy": player.vy, "vtot": ((player.vx ** 2 + player.vy ** 2 )**.5), "ax": player.ax, "ay": player.ay}, 4);
-    log({"cx":cx, "cy":cy, "cx-px":(cx - player.x), "cy-py":(cy-player.y)}, 4);
+    debugBank[2] = debugString({"x": player.x, "y": player.y, "radius": radius, "angle (deg)": player.angle * 180 / 3.14}, 4);
+    debugBank[3] = debugString({"vx": player.vx, "vy": player.vy, "vtot": ((player.vx ** 2 + player.vy ** 2 )**.5), "ax": player.ax, "ay": player.ay}, 4);
+    debugBank[4] = debugString({"cx":cx, "cy":cy, "cx-px":(cx - player.x), "cy-py":(cy-player.y)}, 4);
 
     // if(player.angleA > 0)
     // {
@@ -449,9 +562,9 @@ function mainLoop(delta)
     radiusLine.lineStyle(5, RADIUS_COLOR);
     radiusLine.lineTo((cx - player.x), (cy - player.y));
     
-    accelVisualizer.x = player.ax * 10 + player.x;
-    accelVisualizer.y = player.ay * 10 + player.y;
-    log({"axxx":accelVisualizer.x, "ayyy":accelVisualizer.y});
+    // accelVisualizer.x = player.ax * 10 + player.x;
+    // accelVisualizer.y = player.ay * 10 + player.y;
+    // log({"axxx":accelVisualizer.x, "ayyy":accelVisualizer.y});
 
     for (shot in playerShots)
     {
@@ -460,4 +573,12 @@ function mainLoop(delta)
     }
 
     previousKeyHandler();
+
+    // debug.rollingText = 0; // Used to queue up what is printed
+    debug.text = "";
+    for (string in debugBank)
+    {
+        debug.text = debug.text.concat(debugBank[string]).concat("\n");
+    }
+    
 }
