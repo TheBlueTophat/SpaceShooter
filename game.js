@@ -3,6 +3,9 @@
 // -- https://medium.com/@dovern42/handling-multiple-key-presses-at-once-in-vanilla-javascript-for-game-controllers-6dcacae931b7
 // - Tool for getting keyboard input names
 // -- https://jsfiddle.net/4j54jqt2/4
+// - Fixing modulus in javascript so numbers can wrap around (how one would expect)
+// -- https://stackoverflow.com/questions/4467539/javascript-modulo-gives-a-negative-result-for-negative-numbers
+
 
 // Remember, Ctrl + Shift + R to reload the page as well as refresh the cache
 
@@ -141,18 +144,43 @@ function log(info, precision = 4, returnString = false, formatString = false)
 }
 
 // Turns an object with multiple key/value pairs, used for naming variables and describing their contents, into a string fit for display
-// info is the object, looking something like {"var1":val2, "var2":val2}
-// precision is how many decimal places to have (I'm pretty sure it rounds but not 100%)
-// print determines whether or not to print the info to the console as well (defaults to not because this basically replaces the console lo)
-function debugString(info, precision = 4, print = false)
+// - info: the object, looking something like {"var1":val2, "var2":val2}
+// - precision: how many decimal places to have (I'm pretty sure it rounds but not 100%)
+// - print: whether or not to print the info to the console as well (defaults to not because this basically replaces the console lo)
+// - varW: width of each block in characters for variable names
+// - dataW: width of each block in characters for the data itself corresponding to the variable
+function debugString(info, precision = 4, print = false, varW = 6, dataW = 10)
 {
+    let newKey = "";
+    let negativeBuffer = " ";
     for(i in info)
     {
-        info[i] = info[i].toFixed(precision);
-        info[i] = parseFloat(info[i]);
+        newKey = i.substring(0, varW).concat("").padStart(varW + 1);
+
+        // Replaces the key name
+        if(newKey != i)
+        {
+            info[newKey] = info[i];
+            delete info[i];
+            i = newKey;
+        }
+
+        info[i] = parseFloat(info[i].toFixed(precision)); // Rounds to however many decimal places
+
+        negativeBuffer = " "; // When the number isn't negative add an extra space to the start
+        if(info[i] < 0)
+        {
+            negativeBuffer = ""; // If the number is negative, don't add the extra space
+        }
+
+        // Converts the value to a string, chops off anything after dataW, and pads whats left with spaces in case it's shorter than expected
+        // Adds the buffer to the start before padding 
+        info[i] = (negativeBuffer + JSON.stringify(info[i]).substring(0, dataW)).padEnd(dataW);
     }
 
-    let newInfo = JSON.stringify(info).replace(/[{}]/g, "").replace(/[,]/g, "\t\t\t").replace(/[:]/g, "\t\t\t");
+    // Cleans up the output string to remove stuff like braces/brackets/punctuation
+    // Colons are default delineator, could optionally add more spacing/padding between keys and values if desired
+    let newInfo = JSON.stringify(info).replace(/[{}",]/g, "").replace(/[:]/g, ":");
 
     if(print) p(info);
 
@@ -246,20 +274,17 @@ function mainLoop(delta)
 {
     elapsed += delta;
 
+    justPressedHandler(); 
+
     // GOOD
     let cx = player.x - Math.cos(player.angle) * radius;
     let cy = player.y + Math.sin(player.angle) * radius;
-
-
-    justPressedHandler();
 
     if(kD.right)
     {
         // p'x = cos(theta) * (px-ox) - sin(theta) * (py-oy) + ox
         // p'y = sin(theta) * (px-ox) + cos(theta) * (py-oy) + oy
-        let rA = -(3.14/180) * delta; // 1 deg
-
-
+        let rA = -(Math.PI/180) * delta; // 1 deg
 
         if(player.angle < 0)
         {
@@ -294,6 +319,7 @@ function mainLoop(delta)
 
         // dummy.angle += dummy.angleV;
         dummy.angleV += rA;
+        dummy.angle += dummy.angleV * delta;
 
         if(dummy.angle < 0)
         {
@@ -307,22 +333,44 @@ function mainLoop(delta)
         // dummy.vx += Math.cos(dummy.angle);
         // dummy.vy += Math.sin(dummy.angle);
         // velocity adds the derivative of the trig of the angle instead:
-        dummy.angle += dummy.angleV * delta;
-        dummy.vx = -Math.sin(dummy.angle) * 2 * delta;
-        dummy.vy = Math.cos(dummy.angle) * 2 * delta;
+        
+        dummy.vx = -Math.sin(dummy.angle) * delta * dummy.angleV * 10;
+        dummy.vy = Math.cos(dummy.angle) * delta * dummy.angleV * 10;
     }
 
     dummy.x += dummy.vx;
     dummy.y += dummy.vy;
 
-    dummy.angleV *= 0.9; // limits to 0 reasonably fast
+    // dummy.angleV *= 0.9; // limits to 0 reasonably fast
     dummy.vx *= 0.95;
     dummy.vy *= 0.95;
+
+    if(dummy.angleV > 0)
+    {
+        dummy.angleV -= (Math.PI / 180) * delta * 0.5; // 1/10th of a degree
+
+        if(dummy.angleV < 0)
+        {
+            dummy.angleV = 0;
+        }
+    }
+
+    if(dummy.angleV < 0)
+    {
+        dummy.angleV += (Math.PI / 180) * delta * 0.5;// 1/10th of a degree;
+
+        if(dummy.angleV > 0)
+        {
+            dummy.angleV = 0;
+        }
+    }
+
+    dummy.angleV = clamp(dummy.angleV, -0.5, 0.5);
 
     // dummy.x += Math.cos(dummy.angle) * ;
     // dummy.y += Math.sin(dummy.angle);
     
-    debugBank[1] = debugString({"dvx":dummy.vx, "dvy":dummy.vy});
+    debugBank[1] = debugString({"dvx":dummy.vx, "dvy":dummy.vy, "drV":dummy.angleV});
 
     if(kD.left)
     {
