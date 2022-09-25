@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <h1>Various Calculators</h1>
+
+    <h3>% Error</h3>
+
+    <p>Formula: <code>% Error = |(va - ve) / ve| * 100%</code></p>
+
+    <p>Where:</p>
+
+    <ul>
+    <li><code>va</code>: Actual value observed</li>
+    <li><code>ve</code>: Value calculated or expected</li>
+    </ul>
+
+    va: <input type="text" id="percentError_va" ><br>
+    ve: <input type="text" id="percentError_ve"><br>
+    (Optional) decimal places: <input type="text" id="percentError_decimalPlaces" value="3"><br>
+
+    <button onclick="percentError()">Calculate</button><br>
+    Percent Error: <span id="percentErrorOutput">?</span>%
+
+    <script>
+        function percentError()
+        {
+            var va = document.getElementById("percentError_va").value;
+            var ve = document.getElementById("percentError_ve").value;
+            var decimalPlaces = document.getElementById("percentError_decimalPlaces").value;
+            document.getElementById("percentErrorOutput").innerHTML = (Math.abs((va - ve) / ve) * 100).toFixed(decimalPlaces);
+        }
+    </script>
+
+</body>
+</html>
